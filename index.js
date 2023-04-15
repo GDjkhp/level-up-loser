@@ -119,27 +119,31 @@ class renderCanvas {
         ctx.fillStyle = "black";
         ctx.fillRect(0, 0, 600, 300);
 
+        // behind text
+        try {
+            if (attach != null) {
+                var png = await Canvas.loadImage(attach);
+    
+                var hRatio = 300 / png.width;
+                var vRatio = 300 / png.height;
+                var ratio  = Math.min ( hRatio, vRatio );
+                ctx.drawImage(png, 0, 0, png.width, png.height, 200, 25, png.width*ratio, png.height*ratio);
+            }
+        } catch (error) {
+            console.log(error);
+        }
+
         // circle
         ctx.save();
         ctx.beginPath();
         ctx.arc(150, 150, 100, 0, Math.PI * 2, true);
         ctx.closePath();
         ctx.clip();
-
+        
         // draw avatar
         const avatar = await Canvas.loadImage(avatarURL);
         ctx.drawImage(avatar, 50, 50, 200, 200);
         ctx.restore();
-
-        // behind text
-        if (attach != null) {
-            var png = await Canvas.loadImage(attach);
-
-            var hRatio = 300 / png.width;
-            var vRatio = 300 / png.height;
-            var ratio  = Math.min ( hRatio, vRatio );
-            ctx.drawImage(png, 0, 0, png.width, png.height, 200, 25, png.width*ratio, png.height*ratio);
-        }
 
         // text anything
         Canvas.GlobalFonts.registerFromPath('./AmaticSC-Regular.ttf', 'amogus');
