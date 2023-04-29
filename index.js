@@ -35,7 +35,7 @@ const configuration = new Configuration({
     apiKey: process.env.OPENAI_TOKEN,
 });
 const openai = new OpenAIApi(configuration);
-
+// TEXT GENERATION
 client.on("messageCreate", async (message) => {
 	if(message.content.includes(prefix + "ask")) {
         try {
@@ -44,8 +44,20 @@ client.on("messageCreate", async (message) => {
                 model: "gpt-3.5-turbo",
                 messages: [{role: "user", content: promptMsg}],
             });
-            console.log(`prompt: ${promptMsg}\nresponse: ${completion.data.choices[0].message}`);
-            message.reply(completion.data.choices[0].message);
+        } catch (error) {
+            console.log(error.message);
+            message.reply(await martinLutherKing());
+        }
+    }
+});
+// IMAGE GENERATION
+client.on("messageCreate", async (message) => {
+	if(message.content.includes(prefix + "imagine")) {
+        try {
+            let promptMsg = message.content.replace(prefix + "imagine ", '');
+            const response = await openai.createImage({
+                prompt: promptMsg,
+            });
         } catch (error) {
             console.log(error.message);
             message.reply(await martinLutherKing());
