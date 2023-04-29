@@ -48,7 +48,11 @@ client.on("messageCreate", async (message) => {
                 model: "gpt-3.5-turbo",
                 messages: [{role: "user", content: promptMsg}],
             });
-            message.reply(completion.data.choices[0].message.content);
+            try {
+                message.reply(completion.data.choices[0].message.content);
+            } catch (error) {
+                console.log('error! can\'t send the message. maybe text too long!');
+            }
         } catch (error) {
             console.log(error.message);
             message.reply(await martinLutherKing());
