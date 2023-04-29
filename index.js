@@ -39,7 +39,7 @@ const openai = new OpenAIApi(configuration);
 client.on("messageCreate", async (message) => {
 	if(message.content.includes(prefix + "ask")) {
         try {
-            let promptMsg = message.content.replace(prefix + "ask ", '');
+            let promptMsg = message.content.replace(prefix + "ask", '');
             if (message.mentions.repliedUser != null) {
                 const hey = await message.channel.messages.fetch(message.reference.messageId);
                 promptMsg = `${promptMsg}: ${hey.content}`;
@@ -59,7 +59,7 @@ client.on("messageCreate", async (message) => {
 client.on("messageCreate", async (message) => {
 	if(message.content.includes(prefix + "imagine")) {
         try {
-            let promptMsg = message.content.replace(prefix + "imagine ", '');
+            let promptMsg = message.content.replace(prefix + "imagine", '');
             if (message.mentions.repliedUser != null) {
                 const hey = await message.channel.messages.fetch(message.reference.messageId);
                 promptMsg = `${promptMsg}: ${hey.content}`;
