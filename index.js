@@ -1,20 +1,9 @@
 // Discord Bot by GDjkhp
-// Features: xp system, insult generator, make it a quote
+// Features: xp system, insult generator, make it a quote, chatgpt
 // Reach out GDjkhp#3732 on Discord for support
 
 require('dotenv').config();
 const {Client, Events, GatewayIntentBits} = require('discord.js');
-const Levels = require('discord-xp');
-const lvl = require('./messages.json');
-const roast = require('./insults.json');
-const config = require('./config.json');	
-const canvacord = require('canvacord');
-const requestHandler = require('axios').default;
-Levels.setURL(process.env.DB);
-const prefix = config.prefix;
-const axios = requestHandler.create({
-    timeout: 2000,
-});
 const client = new Client({ 
 	intents: [
 		GatewayIntentBits.Guilds, 
@@ -22,8 +11,16 @@ const client = new Client({
 		GatewayIntentBits.MessageContent
 	] 
 });
-const Canvas = require("@napi-rs/canvas");
+const config = require('./config.json');
+const prefix = config.prefix;
 const fs = require("fs");
+const Canvas = require("@napi-rs/canvas");
+const lvl = require('./messages.json');
+const roast = require('./insults.json');
+const requestHandler = require('axios').default;
+const axios = requestHandler.create({
+    timeout: 2000,
+});
 
 // When the client is ready, run this code (only once)
 // We use 'c' for the event parameter to keep it separate from the already defined 'client'
@@ -31,84 +28,117 @@ client.once(Events.ClientReady, c => {
 	console.log(`Ready! Logged in as ${c.user.tag}`);
 });
 
-client.on("messageCreate", async (message) => {
-	if (!message.guild) return;
-	if (message.author.bot) return;
+// open ai shit
+const { Configuration, OpenAIApi } = require("openai");
 
-	const randomAmountOfXp = Math.floor(Math.random() * 29) + 1; // Min 1, Max 30
-	const hasLeveledUp = await Levels.appendXp(message.author.id, message.guild.id, randomAmountOfXp);
-	if (hasLeveledUp) {
-		const user = await Levels.fetch(message.author.id, message.guild.id);
-		message.channel.send({ content: levelUpGPT(message.author, user.level) /*, ephemeral: true*/ });
-	}
+const configuration = new Configuration({
+    apiKey: process.env.OPENAI_TOKEN,
+});
+const openai = new OpenAIApi(configuration);
+
+client.on("messageCreate", async (message) => {
+	if(message.content.includes(prefix + "ask")) {
+        try {
+            let promptMsg = message.content.replace(prefix + "ask ", '');
+            const completion = await openai.createChatCompletion({
+                model: "gpt-3.5-turbo",
+                messages: [{role: "user", content: promptMsg}],
+            });
+            console.log(`prompt: ${promptMsg}\nresponse: ${completion.data.choices[0].message}`);
+            message.reply(completion.data.choices[0].message);
+        } catch (error) {
+            console.log(error.message);
+            message.reply(await martinLutherKing());
+        }
+    }
 });
 
+const Levels = require('discord-xp');
+Levels.setURL(process.env.DB);
+const canvacord = require('canvacord');
+
+var xpSystem = false; // ItzCata said it's annoying
+if (xpSystem) {
+    // XP RNG
+    client.on("messageCreate", async (message) => {
+        if (!message.guild) return;
+        if (message.author.bot) return;
+    
+        const randomAmountOfXp = Math.floor(Math.random() * 29) + 1; // Min 1, Max 30
+        const hasLeveledUp = await Levels.appendXp(message.author.id, message.guild.id, randomAmountOfXp);
+        if (hasLeveledUp) {
+            const user = await Levels.fetch(message.author.id, message.guild.id);
+            message.channel.send({ content: levelUpGPT(message.author, user.level) /*, ephemeral: true*/ });
+        }
+    });
+    // RANK
+    client.on("messageCreate", async (message) => {
+        if (message.content.startsWith(prefix + "rank")) {
+            const target = message.mentions.users.first() || message.author; // Grab the target.
+            const user = await Levels.fetch(target.id, message.guild.id, true); // Selects the target from the database.
+    
+            if (!user) return message.channel.send("Seems like this user has not earned any xp so far."); // If there isnt such user in the database, we send a message in general.
+            message.channel.send(`> **${target.tag}** is currently level ${user.level}.\n> ${user.cleanXp} / ${user.cleanNextLevelXp} XP`); // We show the level.
+    
+            const rank = new canvacord.Rank() // Build the Rank Card
+                .registerFonts([{
+                    path: './AmaticSC-Regular.ttf', name: 'amogus'
+                }])
+                .setAvatar(target.displayAvatarURL({ format: 'png', size: 512 }))
+                .setCurrentXP(user.cleanXp) // Current User Xp for the current level
+                .setRequiredXP(user.cleanNextLevelXp) //The required Xp for the next level
+                .setRank(user.position) // Position of the user on the leaderboard
+                .setLevel(user.level) // Current Level of the user
+                .setProgressBar(["#14C49E", "#FF0000"], "GRADIENT", true)
+                .setUsername(target.username)
+                .setDiscriminator(target.discriminator);
+    
+            rank.build(ops = { fontX: "amogus,NOTO_COLOR_EMOJI", fontY: "amogus,NOTO_COLOR_EMOJI" })
+                .then(data => {
+                    canvacord.write(data, "RankCard.png");
+                    message.channel.send({
+                        files: [{
+                            attachment: './RankCard.png'
+                        }]
+                    })
+                });
+        }
+    });
+    // LEADERBOARD
+    client.on("messageCreate", async (message) => {
+        if (message.content.startsWith(prefix + "leaderboard")) {
+            const rawLeaderboard = await Levels.fetchLeaderboard(message.guild.id, 10); // We grab top 10 users with most xp in the current server.
+            if (rawLeaderboard.length < 1) return reply("Nobody's in leaderboard yet.");
+            const leaderboard = await Levels.computeLeaderboard(client, rawLeaderboard, true); // We process the leaderboard.
+            const lb = leaderboard.map(e => `${e.position}. ${e.username}#${e.discriminator}, Level: ${e.level}, XP: ${e.xp.toLocaleString()}`); // We map the outputs.
+            message.channel.send(`**Leaderboard**:\n\n${lb.join("\n")}`);
+        }
+    });
+}
+// INSULTS
 client.on("messageCreate", async (message) => {
-	if (message.content.startsWith(prefix + "rank")) {
-		const target = message.mentions.users.first() || message.author; // Grab the target.
-		const user = await Levels.fetch(target.id, message.guild.id, true); // Selects the target from the database.
-
-		if (!user) return message.channel.send("Seems like this user has not earned any xp so far."); // If there isnt such user in the database, we send a message in general.
-		message.channel.send(`> **${target.tag}** is currently level ${user.level}.\n> ${user.cleanXp} / ${user.cleanNextLevelXp} XP`); // We show the level.
-
-		const rank = new canvacord.Rank() // Build the Rank Card
-			.registerFonts([{
-				path: './AmaticSC-Regular.ttf', name: 'amogus'
-			}])
-			.setAvatar(target.displayAvatarURL({ format: 'png', size: 512 }))
-			.setCurrentXP(user.cleanXp) // Current User Xp for the current level
-			.setRequiredXP(user.cleanNextLevelXp) //The required Xp for the next level
-			.setRank(user.position) // Position of the user on the leaderboard
-			.setLevel(user.level) // Current Level of the user
-			.setProgressBar(["#14C49E", "#FF0000"], "GRADIENT", true)
-			.setUsername(target.username)
-			.setDiscriminator(target.discriminator);
-
-		rank.build(ops = { fontX: "amogus,NOTO_COLOR_EMOJI", fontY: "amogus,NOTO_COLOR_EMOJI" })
-			.then(data => {
-				canvacord.write(data, "RankCard.png");
-				message.channel.send({
-					files: [{
-						attachment: './RankCard.png'
-					}]
-				})
-			});
-	}
+    if(message.content.includes("<@1090254079609020447>") ||
+        (message.mentions.repliedUser != null && message.mentions.repliedUser.id == "1090254079609020447"))
+        message.reply(await martinLutherKing());
 });
-
+// MAKE IT A QUOTE
 client.on("messageCreate", async (message) => {
-	if (message.content.startsWith(prefix + "leaderboard")) {
-		const rawLeaderboard = await Levels.fetchLeaderboard(message.guild.id, 10); // We grab top 10 users with most xp in the current server.
-		if (rawLeaderboard.length < 1) return reply("Nobody's in leaderboard yet.");
-		const leaderboard = await Levels.computeLeaderboard(client, rawLeaderboard, true); // We process the leaderboard.
-		const lb = leaderboard.map(e => `${e.position}. ${e.username}#${e.discriminator}, Level: ${e.level}, XP: ${e.xp.toLocaleString()}`); // We map the outputs.
-		message.channel.send(`**Leaderboard**:\n\n${lb.join("\n")}`);
-	}
-});
-
-client.on("messageCreate", async (message) => {
-	if(message.content.includes("<@1090254079609020447>") ||
-		(message.mentions.repliedUser != null && message.mentions.repliedUser.id == "1090254079609020447"))
-		message.reply(await martinLutherKing(message.author));
-});
-
-client.on("messageCreate", async (message) => {
-	if (message.content.startsWith(prefix + "quote") && message.mentions.repliedUser != null) {
-		const hey = await message.channel.messages.fetch(message.reference.messageId);
-		const c = new renderCanvas();
-		c.buildWord(hey.content, hey.attachments.first() != null ? hey.attachments.first().url : null, 
+    if (message.content.startsWith(prefix + "quote") && message.mentions.repliedUser != null) {
+        const hey = await message.channel.messages.fetch(message.reference.messageId);
+        const c = new renderCanvas();
+        c.buildWord(hey.content, hey.attachments.first() != null ? hey.attachments.first().url : null, 
         `- ${hey.author.username}#${hey.author.discriminator}`, hey.author.displayAvatarURL({ format: 'png', size: 512 }))
-			.then(data => {
-				write(data, "./quote.png");
-				message.reply({
-					files: [{
-						attachment: './quote.png'
-					}]
-				});
-			});
-	}
+            .then(data => {
+                write(data, "./quote.png");
+                message.reply({
+                    files: [{
+                        attachment: './quote.png'
+                    }]
+                });
+            });
+    }
 });
-
+// canvas for quote
 class renderCanvas {
     async buildWord(text, attach, user, avatarURL) {
         // create canvas instance
@@ -215,11 +245,11 @@ class renderCanvas {
         return canvas.encode("png");
     }
 }
-
+// it needs to be saved as png
 function write(data, name) {
     return fs.writeFileSync(name, data);
 }
-
+// level up messages
 function levelUpGPT(name, level) {
 	var r = Math.floor(Math.random() * lvl.length);
 	return stringTemplateParser(lvl[r], { name: name, level: level });
@@ -229,7 +259,8 @@ function insultGPT() {
 	var r = Math.floor(Math.random() * roast.length);
 	return `${roast[r]}`;
 }
-async function martinLutherKing(name) {
+// evil insult bot
+async function martinLutherKing() {
 	try {
 		const response = await axios.get("https://evilinsult.com/generate_insult.php?type=json");
 		let data = await response.data;
@@ -239,7 +270,7 @@ async function martinLutherKing(name) {
 		return insultGPT();
 	}
 }
-
+// ???
 function stringTemplateParser(expression, valueObj) {
 	const templateMatcher = /{{\s?([^{}\s]*)\s?}}/g;
 	let text = expression.replace(templateMatcher, (substring, value, index) => {
@@ -248,6 +279,6 @@ function stringTemplateParser(expression, valueObj) {
 	});
 	return text;
 }
-
+// main function
 client.login(process.env.TOKEN);
 console.log(":)");
