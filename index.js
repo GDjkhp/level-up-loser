@@ -1,5 +1,5 @@
 // Discord Bot by GDjkhp
-// Features: xp system, insult generator, make it a quote, chatgpt
+// Features: xp system, insult generator, make it a quote, chatgpt, dall-e
 // Reach out GDjkhp#3732 on Discord for support
 
 require('dotenv').config();
@@ -44,6 +44,7 @@ client.on("messageCreate", async (message) => {
                 model: "gpt-3.5-turbo",
                 messages: [{role: "user", content: promptMsg}],
             });
+            message.reply(completion.data.choices[0].message.content);
         } catch (error) {
             console.log(error.message);
             message.reply(await martinLutherKing());
@@ -58,6 +59,7 @@ client.on("messageCreate", async (message) => {
             const response = await openai.createImage({
                 prompt: promptMsg,
             });
+            message.reply(response.data.data[0].url);
         } catch (error) {
             console.log(error.message);
             message.reply(await martinLutherKing());
