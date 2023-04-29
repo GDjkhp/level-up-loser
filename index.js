@@ -3,7 +3,7 @@
 // Reach out GDjkhp#3732 on Discord for support
 
 require('dotenv').config();
-const {Client, Events, GatewayIntentBits} = require('discord.js');
+const {Client, Events, GatewayIntentBits, EmbedBuilder} = require('discord.js');
 const client = new Client({ 
 	intents: [
 		GatewayIntentBits.Guilds, 
@@ -40,6 +40,10 @@ client.on("messageCreate", async (message) => {
 	if(message.content.includes(prefix + "ask")) {
         try {
             let promptMsg = message.content.replace(prefix + "ask ", '');
+            if (message.mentions.repliedUser != null) {
+                const hey = await message.channel.messages.fetch(message.reference.messageId);
+                promptMsg = `${promptMsg}: ${hey.content}`;
+            }
             const completion = await openai.createChatCompletion({
                 model: "gpt-3.5-turbo",
                 messages: [{role: "user", content: promptMsg}],
@@ -56,10 +60,16 @@ client.on("messageCreate", async (message) => {
 	if(message.content.includes(prefix + "imagine")) {
         try {
             let promptMsg = message.content.replace(prefix + "imagine ", '');
+            if (message.mentions.repliedUser != null) {
+                const hey = await message.channel.messages.fetch(message.reference.messageId);
+                promptMsg = `${promptMsg}: ${hey.content}`;
+            }
             const response = await openai.createImage({
                 prompt: promptMsg,
             });
-            message.reply(response.data.data[0].url);
+            const exampleEmbed = new EmbedBuilder()
+                .setImage(response.data.data[0].url);
+            message.reply({embeds: [exampleEmbed]});
         } catch (error) {
             console.log(error.message);
             message.reply(await martinLutherKing());
