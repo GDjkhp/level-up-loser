@@ -48,7 +48,7 @@ client.on("messageCreate", async (message) => {
                 model: "gpt-3.5-turbo",
                 messages: [{role: "user", content: promptMsg}],
             });
-            if (completion.data.choices[0].message.content.length > 2000) return;
+            if (completion.data.choices[0].message.content.length > 2000) return message.reply(await martinLutherKing());
             message.reply(completion.data.choices[0].message.content);
         } catch (error) {
             console.log(error.message);
