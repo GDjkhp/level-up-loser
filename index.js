@@ -48,7 +48,7 @@ client.on("messageCreate", async (message) => {
             promptMsg = `${promptMsg}: ${hey.content}`;
         }
         const response = await getResponse(promptMsg);
-        if (!response) return message.reply(`Prompt contains inappropriate or explicit content! ${await martinLutherKing()}`);
+        if (!response) return message.reply(`Error! ${await martinLutherKing()}`);
         message.reply(response);
     }
 });
@@ -69,7 +69,7 @@ async function getResponse(promptMsg) {
             return await getResponse(promptMsg);
         }
         // Handle other errors
-        console.error('An error occurred: ', error);
+        console.error('An error occurred: ', error.response);
         return false;
     }
 }
@@ -102,7 +102,7 @@ async function getImage(promptMsg) {
             return await getImage(promptMsg);
         }
         // Handle other errors
-        console.error('An error occurred: ', error);
+        console.error('An error occurred: ', error.response);
         return false;
     }
 }
