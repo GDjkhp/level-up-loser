@@ -35,49 +35,77 @@ const configuration = new Configuration({
     apiKey: process.env.OPENAI_TOKEN,
 });
 const openai = new OpenAIApi(configuration);
+// Utility function to wait for a specific time
+function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
 // TEXT GENERATION
 client.on("messageCreate", async (message) => {
 	if(message.content.includes(prefix + "ask")) {
-        try {
-            let promptMsg = message.content.replace(prefix + "ask", '');
-            if (message.mentions.repliedUser != null) {
-                const hey = await message.channel.messages.fetch(message.reference.messageId);
-                promptMsg = `${promptMsg}: ${hey.content}`;
-            }
-            const completion = await openai.createChatCompletion({
-                model: "gpt-3.5-turbo",
-                messages: [{role: "user", content: promptMsg}],
-            });
-            if (completion.data.choices[0].message.content.length > 2000) return message.reply(await martinLutherKing());
-            message.reply(completion.data.choices[0].message.content);
-        } catch (error) {
-            console.log(error.message);
-            message.reply(await martinLutherKing());
+        let promptMsg = message.content.replace(prefix + "ask", '');
+        if (message.mentions.repliedUser != null) {
+            const hey = await message.channel.messages.fetch(message.reference.messageId);
+            promptMsg = `${promptMsg}: ${hey.content}`;
         }
+        const response = await getResponse(promptMsg);
+        if (!response) return message.reply(`Prompt contains inappropriate or explicit content! ${await martinLutherKing()}`);
+        message.reply(response);
     }
 });
+async function getResponse(promptMsg) {
+    try {
+        const completion = await openai.createChatCompletion({
+            model: "gpt-3.5-turbo",
+            messages: [{role: "user", content: promptMsg}],
+        });
+        if (completion.data.choices[0].message.content.length > 2000) return `Text too long! ${await martinLutherKing()}`;
+        return completion.data.choices[0].message.content;
+    } catch (error) {
+        if (error.response && error.response.status === 429) {
+            // Retry the request after a delay
+            const retryAfterSeconds = error.response.headers['retry-after'];
+            await wait(retryAfterSeconds * 1000);
+            // Retry the request
+            return await getResponse(promptMsg);
+        }
+        // Handle other errors
+        console.error('An error occurred: ', error);
+        return false;
+    }
+}
 // IMAGE GENERATION
 client.on("messageCreate", async (message) => {
 	if(message.content.includes(prefix + "imagine")) {
-        try {
-            let promptMsg = message.content.replace(prefix + "imagine", '');
-            if (message.mentions.repliedUser != null) {
-                const hey = await message.channel.messages.fetch(message.reference.messageId);
-                promptMsg = `${promptMsg}: ${hey.content}`;
-            }
-            const response = await openai.createImage({
-                prompt: promptMsg,
-            });
-            const exampleEmbed = new EmbedBuilder()
-                .setImage(response.data.data[0].url);
-            message.reply({embeds: [exampleEmbed]});
-        } catch (error) {
-            console.log(error.message);
-            message.reply(await martinLutherKing());
+        let promptMsg = message.content.replace(prefix + "imagine", '');
+        if (message.mentions.repliedUser != null) {
+            const hey = await message.channel.messages.fetch(message.reference.messageId);
+            promptMsg = `${promptMsg}: ${hey.content}`;
         }
+        const response = await getImage(promptMsg);
+        if (!response) return message.reply(`Prompt contains inappropriate or explicit content! ${await martinLutherKing()}`);
+        const exampleEmbed = new EmbedBuilder()
+            .setImage(response.data.data[0].url);
+        message.reply({embeds: [exampleEmbed]});
     }
 });
-
+async function getImage(promptMsg) {
+    try {
+        return response = await openai.createImage({
+            prompt: promptMsg,
+        });
+    } catch (error) {
+        if (error.response && error.response.status === 429) {
+            // Retry the request after a delay
+            const retryAfterSeconds = error.response.headers['retry-after'];
+            await wait(retryAfterSeconds * 1000);
+            // Retry the request
+            return await getImage(promptMsg);
+        }
+        // Handle other errors
+        console.error('An error occurred: ', error);
+        return false;
+    }
+}
 const Levels = require('discord-xp');
 Levels.setURL(process.env.DB);
 const canvacord = require('canvacord');
@@ -285,7 +313,9 @@ function insultGPT() {
 	return `${roast[r]}`;
 }
 // evil insult bot
+let useEvilInsult = false;
 async function martinLutherKing() {
+    if (!useEvilInsult) return insultGPT();
 	try {
 		const response = await axios.get("https://evilinsult.com/generate_insult.php?type=json");
 		let data = await response.data;
