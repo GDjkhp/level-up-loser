@@ -43,15 +43,17 @@ function wait(ms) {
 client.on("messageCreate", async (message) => {
 	if(message.content.includes(prefix + "ask")) {
         let promptMsg = message.content.replace(prefix + "ask", '');
-        if (message.mentions.repliedUser != null) {
-            const hey = await message.channel.messages.fetch(message.reference.messageId);
-            promptMsg = `${promptMsg}: ${hey.content}`;
-        }
+        if (message.mentions.repliedUser != null) promptMsg = await loopMsgs(promptMsg, message);
         const response = await getResponse(promptMsg);
         if (!response) return message.reply(`Error! ${await martinLutherKing()}`);
         message.reply(response);
     }
 });
+async function loopMsgs(promptMsg, message) {
+    if (message.mentions.repliedUser == null) return promptMsg;
+    const hey = await message.channel.messages.fetch(message.reference.messageId);
+    return await loopMsgs(`${hey.content.replace(prefix + "ask", '')} >> ${promptMsg}`, hey);
+}
 async function getResponse(promptMsg) {
     try {
         const completion = await openai.createChatCompletion({
