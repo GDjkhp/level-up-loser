@@ -22,6 +22,25 @@ const axios = requestHandler.create({
     timeout: 2000,
 });
 
+// prefixes
+const quote = "quote", ask = "ask", imagine = "imagine", rank1 = "rank", leaderboard1 = "leaderboard";
+
+// replit
+const isUsingReplit = true;
+var mySecret0, mySecret1, mySecret2;
+if (isUsingReplit) {
+    mySecret0 = process.env['DB'];
+    mySecret1 = process.env['TOKEN'];
+    mySecret2 = process.env['OPENAI_TOKEN'];
+
+    var http = require('http');
+    http.createServer(function(req, res) {
+        res.write("Bot by GDjkhp"); res.end();
+    }).listen(8080);
+
+    console.log(new Date());
+}
+
 // When the client is ready, run this code (only once)
 // We use 'c' for the event parameter to keep it separate from the already defined 'client'
 client.once(Events.ClientReady, c => {
@@ -30,29 +49,24 @@ client.once(Events.ClientReady, c => {
 
 // open ai shit
 const { Configuration, OpenAIApi } = require("openai");
-
 const configuration = new Configuration({
-    apiKey: process.env.OPENAI_TOKEN,
+    apiKey: isUsingReplit ? mySecret2 : process.env.OPENAI_TOKEN,
 });
 const openai = new OpenAIApi(configuration);
-// Utility function to wait for a specific time
-function wait(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-}
+
 // TEXT GENERATION
 client.on("messageCreate", async (message) => {
-	if(message.content.includes(prefix + "ask")) {
-        let promptMsg = message.content.replace(prefix + "ask", '');
+	if(message.content.includes(prefix + ask)) {
+        let promptMsg = message.content.replace(prefix + ask, '');
         if (message.mentions.repliedUser != null) promptMsg = await loopMsgs(promptMsg, message);
         const response = await getResponse(promptMsg);
-        if (!response) return message.reply(`Error! ${await martinLutherKing()}`);
         message.reply(response);
     }
 });
 async function loopMsgs(promptMsg, message) {
     if (message.mentions.repliedUser == null) return promptMsg;
     const hey = await message.channel.messages.fetch(message.reference.messageId);
-    return await loopMsgs(`${hey.content.replace(prefix + "ask", '')} >> ${promptMsg}`, hey);
+    return await loopMsgs(`${hey.content.replace(prefix + ask, '')} >> ${promptMsg}`, hey);
 }
 async function getResponse(promptMsg) {
     try {
@@ -60,9 +74,13 @@ async function getResponse(promptMsg) {
             model: "gpt-3.5-turbo",
             messages: [{role: "user", content: promptMsg}],
         });
-        if (completion.data.choices[0].message.content.length > 2000) return `Text too long! ${await martinLutherKing()}`;
+        if (completion.data.choices[0].message.content.length > 2000) 
+            return `${completion.data.choices[0].message.content.substring(0, 2000 - 16)}\n\nText too long!`;
         return completion.data.choices[0].message.content;
     } catch (error) {
+        if (error.response.data.error.message == "You exceeded your current quota, please check your plan and billing details.")
+            return `${error.response.data.error.message} Wake up <@729554186777133088>!\n\n${await martinLutherKing()}\n\n${await martinLutherKing()}`;
+        
         if (error.response && error.response.status === 429) {
             // Retry the request after a delay
             const retryAfterSeconds = error.response.headers['retry-after'];
@@ -70,32 +88,34 @@ async function getResponse(promptMsg) {
             // Retry the request
             return await getResponse(promptMsg);
         }
+        
         // Handle other errors
-        console.error('An error occurred: ', error.response);
-        return false;
+        return `Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`;
     }
 }
 // IMAGE GENERATION
 client.on("messageCreate", async (message) => {
-	if(message.content.includes(prefix + "imagine")) {
-        let promptMsg = message.content.replace(prefix + "imagine", '');
+	if(message.content.includes(prefix + imagine)) {
+        let promptMsg = message.content.replace(prefix + imagine, '');
         if (message.mentions.repliedUser != null) {
             const hey = await message.channel.messages.fetch(message.reference.messageId);
             promptMsg = `${promptMsg}: ${hey.content}`;
         }
-        const response = await getImage(promptMsg);
-        if (!response) return message.reply(`Prompt contains inappropriate or explicit content! ${await martinLutherKing()}`);
+        await getImage(promptMsg, message);
+    }
+});
+async function getImage(promptMsg, message) {
+    try {
+        const response = await openai.createImage({
+            prompt: promptMsg,
+        });
         const exampleEmbed = new EmbedBuilder()
             .setImage(response.data.data[0].url);
         message.reply({embeds: [exampleEmbed]});
-    }
-});
-async function getImage(promptMsg) {
-    try {
-        return response = await openai.createImage({
-            prompt: promptMsg,
-        });
     } catch (error) {
+        if (error.response.data.error.message == "Billing hard limit has been reached")
+            return message.reply(`Error ${error.response.status}: ${error.response.data.error.message}. Wake up <@729554186777133088>!\n\n${await martinLutherKing()}`);
+    
         if (error.response && error.response.status === 429) {
             // Retry the request after a delay
             const retryAfterSeconds = error.response.headers['retry-after'];
@@ -103,73 +123,76 @@ async function getImage(promptMsg) {
             // Retry the request
             return await getImage(promptMsg);
         }
+
         // Handle other errors
-        console.error('An error occurred: ', error.response);
-        return false;
+        message.reply(`Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`);
     }
 }
-const Levels = require('discord-xp');
-Levels.setURL(process.env.DB);
-const canvacord = require('canvacord');
 
+// XP SYSTEM
 var xpSystem = false; // ItzCata said it's annoying
-if (xpSystem) {
-    // XP RNG
-    client.on("messageCreate", async (message) => {
-        if (!message.guild) return;
-        if (message.author.bot) return;
-    
-        const randomAmountOfXp = Math.floor(Math.random() * 29) + 1; // Min 1, Max 30
-        const hasLeveledUp = await Levels.appendXp(message.author.id, message.guild.id, randomAmountOfXp);
-        if (hasLeveledUp) {
-            const user = await Levels.fetch(message.author.id, message.guild.id);
-            message.channel.send({ content: levelUpGPT(message.author, user.level) /*, ephemeral: true*/ });
-        }
-    });
-    // RANK
-    client.on("messageCreate", async (message) => {
-        if (message.content.startsWith(prefix + "rank")) {
-            const target = message.mentions.users.first() || message.author; // Grab the target.
-            const user = await Levels.fetch(target.id, message.guild.id, true); // Selects the target from the database.
-    
-            if (!user) return message.channel.send("Seems like this user has not earned any xp so far."); // If there isnt such user in the database, we send a message in general.
-            message.channel.send(`> **${target.tag}** is currently level ${user.level}.\n> ${user.cleanXp} / ${user.cleanNextLevelXp} XP`); // We show the level.
-    
-            const rank = new canvacord.Rank() // Build the Rank Card
-                .registerFonts([{
-                    path: './AmaticSC-Regular.ttf', name: 'amogus'
-                }])
-                .setAvatar(target.displayAvatarURL({ format: 'png', size: 512 }))
-                .setCurrentXP(user.cleanXp) // Current User Xp for the current level
-                .setRequiredXP(user.cleanNextLevelXp) //The required Xp for the next level
-                .setRank(user.position) // Position of the user on the leaderboard
-                .setLevel(user.level) // Current Level of the user
-                .setProgressBar(["#14C49E", "#FF0000"], "GRADIENT", true)
-                .setUsername(target.username)
-                .setDiscriminator(target.discriminator);
-    
-            rank.build(ops = { fontX: "amogus,NOTO_COLOR_EMOJI", fontY: "amogus,NOTO_COLOR_EMOJI" })
-                .then(data => {
-                    canvacord.write(data, "RankCard.png");
-                    message.channel.send({
-                        files: [{
-                            attachment: './RankCard.png'
-                        }]
-                    })
-                });
-        }
-    });
-    // LEADERBOARD
-    client.on("messageCreate", async (message) => {
-        if (message.content.startsWith(prefix + "leaderboard")) {
-            const rawLeaderboard = await Levels.fetchLeaderboard(message.guild.id, 10); // We grab top 10 users with most xp in the current server.
-            if (rawLeaderboard.length < 1) return reply("Nobody's in leaderboard yet.");
-            const leaderboard = await Levels.computeLeaderboard(client, rawLeaderboard, true); // We process the leaderboard.
-            const lb = leaderboard.map(e => `${e.position}. ${e.username}#${e.discriminator}, Level: ${e.level}, XP: ${e.xp.toLocaleString()}`); // We map the outputs.
-            message.channel.send(`**Leaderboard**:\n\n${lb.join("\n")}`);
-        }
-    });
-}
+const Levels = require('discord-xp');
+Levels.setURL(isUsingReplit ? mySecret0 : process.env.DB);
+const canvacord = require('canvacord');
+// XP RNG
+client.on("messageCreate", async (message) => {
+    if (!xpSystem) return;
+    if (!message.guild) return;
+    if (message.author.bot) return;
+
+    const randomAmountOfXp = Math.floor(Math.random() * 29) + 1; // Min 1, Max 30
+    const hasLeveledUp = await Levels.appendXp(message.author.id, message.guild.id, randomAmountOfXp);
+    if (hasLeveledUp) {
+        const user = await Levels.fetch(message.author.id, message.guild.id);
+        message.channel.send({ content: levelUpGPT(message.author, user.level) /*, ephemeral: true*/ });
+    }
+});
+// RANK
+client.on("messageCreate", async (message) => {
+    if (!xpSystem) return;
+    if (message.content.startsWith(prefix + rank1)) {
+        const target = message.mentions.users.first() || message.author; // Grab the target.
+        const user = await Levels.fetch(target.id, message.guild.id, true); // Selects the target from the database.
+
+        if (!user) return message.channel.send("Seems like this user has not earned any xp so far."); // If there isnt such user in the database, we send a message in general.
+        message.channel.send(`> **${target.tag}** is currently level ${user.level}.\n> ${user.cleanXp} / ${user.cleanNextLevelXp} XP`); // We show the level.
+
+        const rank = new canvacord.Rank() // Build the Rank Card
+            .registerFonts([{
+                path: './AmaticSC-Regular.ttf', name: 'amogus'
+            }])
+            .setAvatar(target.displayAvatarURL({ format: 'png', size: 512 }))
+            .setCurrentXP(user.cleanXp) // Current User Xp for the current level
+            .setRequiredXP(user.cleanNextLevelXp) //The required Xp for the next level
+            .setRank(user.position) // Position of the user on the leaderboard
+            .setLevel(user.level) // Current Level of the user
+            .setProgressBar(["#14C49E", "#FF0000"], "GRADIENT", true)
+            .setUsername(target.username)
+            .setDiscriminator(target.discriminator);
+
+        rank.build(ops = { fontX: "amogus,NOTO_COLOR_EMOJI", fontY: "amogus,NOTO_COLOR_EMOJI" })
+            .then(data => {
+                canvacord.write(data, "RankCard.png");
+                message.channel.send({
+                    files: [{
+                        attachment: './RankCard.png'
+                    }]
+                })
+            });
+    }
+});
+// LEADERBOARD
+client.on("messageCreate", async (message) => {
+    if (!xpSystem) return;
+    if (message.content.startsWith(prefix + leaderboard1)) {
+        const rawLeaderboard = await Levels.fetchLeaderboard(message.guild.id, 10); // We grab top 10 users with most xp in the current server.
+        if (rawLeaderboard.length < 1) return reply("Nobody's in leaderboard yet.");
+        const leaderboard = await Levels.computeLeaderboard(client, rawLeaderboard, true); // We process the leaderboard.
+        const lb = leaderboard.map(e => `${e.position}. ${e.username}#${e.discriminator}, Level: ${e.level}, XP: ${e.xp.toLocaleString()}`); // We map the outputs.
+        message.channel.send(`**Leaderboard**:\n\n${lb.join("\n")}`);
+    }
+});
+
 // INSULTS
 client.on("messageCreate", async (message) => {
     if(message.content.includes("<@1090254079609020447>") ||
@@ -178,7 +201,7 @@ client.on("messageCreate", async (message) => {
 });
 // MAKE IT A QUOTE
 client.on("messageCreate", async (message) => {
-    if (message.content.startsWith(prefix + "quote") && message.mentions.repliedUser != null) {
+    if (message.content.startsWith(prefix + quote) && message.mentions.repliedUser != null) {
         const hey = await message.channel.messages.fetch(message.reference.messageId);
         const c = new renderCanvas();
         c.buildWord(hey.content, hey.attachments.first() != null ? hey.attachments.first().url : null, 
@@ -327,6 +350,10 @@ async function martinLutherKing() {
 		return insultGPT();
 	}
 }
+// Utility function to wait for a specific time
+function wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
 // ???
 function stringTemplateParser(expression, valueObj) {
 	const templateMatcher = /{{\s?([^{}\s]*)\s?}}/g;
@@ -337,5 +364,5 @@ function stringTemplateParser(expression, valueObj) {
 	return text;
 }
 // main function
-client.login(process.env.TOKEN);
+client.login(isUsingReplit ? mySecret1 : process.env.TOKEN);
 console.log(":)");
