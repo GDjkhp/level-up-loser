@@ -121,7 +121,7 @@ async function getImage(promptMsg, message) {
             const retryAfterSeconds = error.response.headers['retry-after'];
             await wait(retryAfterSeconds * 1000);
             // Retry the request
-            return await getImage(promptMsg);
+            return await getImage(promptMsg, message);
         }
 
         // Handle other errors
