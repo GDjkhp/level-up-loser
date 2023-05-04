@@ -64,7 +64,7 @@ client.on("messageCreate", async (message) => {
     }
 });
 async function loopMsgs(promptMsg, message) {
-    if (message.mentions.repliedUser == null) return promptMsg;
+    if (message.mentions.repliedUser == null) return `${promptMsg} >> ___`;
     const hey = await message.channel.messages.fetch(message.reference.messageId);
     return await loopMsgs(`${hey.content.replace(prefix + ask, '')} >> ${promptMsg}`, hey);
 }
