@@ -27,12 +27,7 @@ const quote = "quote", ask = "ask", imagine = "imagine", rank1 = "rank", leaderb
 
 // replit
 const isUsingReplit = true;
-var mySecret0, mySecret1, mySecret2;
 if (isUsingReplit) {
-    mySecret0 = process.env['DB'];
-    mySecret1 = process.env['TOKEN'];
-    mySecret2 = process.env['OPENAI_TOKEN'];
-
     var http = require('http');
     http.createServer(function(req, res) {
         res.write("Bot by GDjkhp"); res.end();
@@ -50,13 +45,13 @@ client.once(Events.ClientReady, c => {
 // open ai shit
 const { Configuration, OpenAIApi } = require("openai");
 const configuration = new Configuration({
-    apiKey: isUsingReplit ? mySecret2 : process.env.OPENAI_TOKEN,
+    apiKey: process.env.OPENAI_TOKEN,
 });
 const openai = new OpenAIApi(configuration);
 
 // TEXT GENERATION
 client.on("messageCreate", async (message) => {
-	if(message.content.includes(prefix + ask)) {
+	if(message.content.startsWith(prefix + ask)) {
         let promptMsg = message.content.replace(prefix + ask, '');
         if (message.mentions.repliedUser != null) promptMsg = await loopMsgs(promptMsg, message);
         const response = await getResponse(promptMsg);
@@ -95,7 +90,7 @@ async function getResponse(promptMsg) {
 }
 // IMAGE GENERATION
 client.on("messageCreate", async (message) => {
-	if(message.content.includes(prefix + imagine)) {
+	if(message.content.startsWith(prefix + imagine)) {
         let promptMsg = message.content.replace(prefix + imagine, '');
         if (message.mentions.repliedUser != null) {
             const hey = await message.channel.messages.fetch(message.reference.messageId);
@@ -132,7 +127,7 @@ async function getImage(promptMsg, message) {
 // XP SYSTEM
 var xpSystem = false; // ItzCata said it's annoying
 const Levels = require('discord-xp');
-Levels.setURL(isUsingReplit ? mySecret0 : process.env.DB);
+Levels.setURL(process.env.DB);
 const canvacord = require('canvacord');
 // XP RNG
 client.on("messageCreate", async (message) => {
@@ -364,5 +359,5 @@ function stringTemplateParser(expression, valueObj) {
 	return text;
 }
 // main function
-client.login(isUsingReplit ? mySecret1 : process.env.TOKEN);
+client.login(process.env.TOKEN);
 console.log(":)");
