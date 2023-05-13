@@ -40,6 +40,7 @@ if (isUsingReplit) {
 // We use 'c' for the event parameter to keep it separate from the already defined 'client'
 client.once(Events.ClientReady, c => {
 	console.log(`Ready! Logged in as ${c.user.tag}`);
+    client.user.setStatus("dnd");
 });
 
 // open ai shit
@@ -54,16 +55,16 @@ client.on("messageCreate", async (message) => {
 	if(message.content.startsWith(prefix + ask)) {
         let promptMsg = message.content.replace(prefix + ask, '');
         if (message.mentions.repliedUser != null) promptMsg = await loopMsgs(promptMsg, message);
-        const response = await getResponse(promptMsg);
+        const response = await getResponse(promptMsg, message);
         message.reply(response);
     }
 });
 async function loopMsgs(promptMsg, message) {
-    if (message.mentions.repliedUser == null) return `${promptMsg} >> ___`;
+    if (message.mentions.repliedUser == null) return `${promptMsg} >>`;
     const hey = await message.channel.messages.fetch(message.reference.messageId);
     return await loopMsgs(`${hey.content.replace(prefix + ask, '')} >> ${promptMsg}`, hey);
 }
-async function getResponse(promptMsg) {
+async function getResponse(promptMsg, message) {
     try {
         const completion = await openai.createChatCompletion({
             model: "gpt-3.5-turbo",
@@ -74,14 +75,15 @@ async function getResponse(promptMsg) {
         return completion.data.choices[0].message.content;
     } catch (error) {
         if (error.response.data.error.message == "You exceeded your current quota, please check your plan and billing details.")
-            return `${error.response.data.error.message} Wake up <@729554186777133088>!\n\n${await martinLutherKing()}\n\n${await martinLutherKing()}`;
+            return `${error.response.data.error.message} Wake up <@729554186777133088>!\n\n${await martinLutherKing()}`;
         
         if (error.response && error.response.status === 429) {
             // Retry the request after a delay
             const retryAfterSeconds = error.response.headers['retry-after'];
+            message.reply(`Your are being rate limited! Retrying in ${retryAfterSeconds} seconds, please wait!\n\n${await martinLutherKing()}`);
             await wait(retryAfterSeconds * 1000);
             // Retry the request
-            return await getResponse(promptMsg);
+            return await getResponse(promptMsg, message);
         }
         
         // Handle other errors
@@ -114,6 +116,7 @@ async function getImage(promptMsg, message) {
         if (error.response && error.response.status === 429) {
             // Retry the request after a delay
             const retryAfterSeconds = error.response.headers['retry-after'];
+            message.reply(`Your are being rate limited! Retrying in ${retryAfterSeconds} seconds, please wait!\n\n${await martinLutherKing()}`);
             await wait(retryAfterSeconds * 1000);
             // Retry the request
             return await getImage(promptMsg, message);
