@@ -189,6 +189,7 @@ client.on("messageCreate", async (message) => {
 
 // INSULTS
 client.on("messageCreate", async (message) => {
+    if (message.author.bot) return;
     if(message.content.includes("<@1090254079609020447>") ||
         (message.mentions.repliedUser != null && message.mentions.repliedUser.id == "1090254079609020447"))
         message.reply(await martinLutherKing());
