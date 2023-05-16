@@ -79,6 +79,7 @@ async function getResponse(promptMsg, message) {
         
         if (error.response && error.response.status === 429) {
             // Retry the request after a delay
+            message.reply(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
             await wait(60 * 1000);
             // Retry the request
             return await getResponse(promptMsg, message);
@@ -113,6 +114,7 @@ async function getImage(promptMsg, message) {
     
         if (error.response && error.response.status === 429) {
             // Retry the request after a delay
+            message.reply(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
             await wait(60 * 1000);
             // Retry the request
             return await getImage(promptMsg, message);
