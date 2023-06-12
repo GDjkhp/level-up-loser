@@ -43,6 +43,7 @@ client.once(Events.ClientReady, c => {
     client.user.setStatus("dnd");
 });
 
+
 // open ai shit
 const { Configuration, OpenAIApi } = require("openai");
 const configuration = new Configuration({
@@ -239,16 +240,16 @@ class renderCanvas {
         }
 
         // circle
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(150, 150, 100, 0, Math.PI * 2, true);
-        ctx.closePath();
-        ctx.clip();
+        // ctx.save();
+        // ctx.beginPath();
+        // ctx.arc(150, 150, 100, 0, Math.PI * 2, true);
+        // ctx.closePath();
+        // ctx.clip();
         
         // draw avatar
         const avatar = await Canvas.loadImage(avatarURL);
         ctx.drawImage(avatar, 50, 50, 200, 200);
-        ctx.restore();
+        // ctx.restore();
 
         // text anything
         Canvas.GlobalFonts.registerFromPath('./AmaticSC-Regular.ttf', 'amogus');
