@@ -23,7 +23,7 @@ const axios = requestHandler.create({
 });
 
 // prefixes
-const quote = "quote", ask = "ask", imagine = "imagine", rank1 = "rank", leaderboard1 = "leaderboard";
+const quote = "quote", ask = "ask", imagine = "imagine", rank1 = "rank", leaderboard1 = "leaderboard", gpt = "gpt";
 
 // replit
 const isUsingReplit = true;
@@ -43,7 +43,6 @@ client.once(Events.ClientReady, c => {
     client.user.setStatus("dnd");
 });
 
-
 // open ai shit
 const { Configuration, OpenAIApi } = require("openai");
 const configuration = new Configuration({
@@ -51,7 +50,7 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
-// TEXT GENERATION
+// TEXT GENERATION (GPT 3.5 Turbo)
 client.on("messageCreate", async (message) => {
 	if(message.content.startsWith(prefix + ask)) {
         let promptMsg = message.content.replace(prefix + ask, '');
@@ -90,6 +89,48 @@ async function getResponse(promptMsg, message) {
         return `Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`;
     }
 }
+
+// TEXT GENERATION (GPT 3)
+client.on("messageCreate", async (message) => {
+	if(message.content.startsWith(prefix + gpt)) {
+        let promptMsg = message.content.replace(prefix + gpt, '');
+        if (message.mentions.repliedUser != null) promptMsg = await loopMsgs(promptMsg, message);
+        const response = await getResponse(promptMsg, message);
+        message.reply(response);
+    }
+});
+async function loopMsgs(promptMsg, message) {
+    if (message.mentions.repliedUser == null) return `${promptMsg} >>`;
+    const hey = await message.channel.messages.fetch(message.reference.messageId);
+    return await loopMsgs(`${hey.content.replace(prefix + ask, '')} >> ${promptMsg}`, hey);
+}
+async function getResponse(promptMsg, message) {
+    try {
+        const completion = await openai.createCompletion({
+            model: "text-davinci-003",
+            prompt: promptMsg,
+            max_tokens: 2000,
+        });
+        if (completion.data.choices[0].text.length > 2000) 
+            return `${completion.data.choices[0].text.substring(0, 2000 - 16)}\n\nText too long!`;
+        return completion.data.choices[0].text;
+    } catch (error) {
+        if (error.response.data.error.message == "You exceeded your current quota, please check your plan and billing details.")
+            return `${error.response.data.error.message} Wake up <@729554186777133088>!\n\n${await martinLutherKing()}`;
+        
+        if (error.response && error.response.status === 429) {
+            // Retry the request after a delay
+            message.reply(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
+            await wait(60 * 1000);
+            // Retry the request
+            return await getResponse(promptMsg, message);
+        }
+        
+        // Handle other errors
+        return `Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`;
+    }
+}
+
 // IMAGE GENERATION
 client.on("messageCreate", async (message) => {
 	if(message.content.startsWith(prefix + imagine)) {
@@ -200,7 +241,7 @@ client.on("messageCreate", async (message) => {
 // MAKE IT A QUOTE
 client.on("messageCreate", async (message) => {
     if (message.content.startsWith(prefix + quote) && message.mentions.repliedUser != null) {
-        const hey = await message.channel.messages.fetch(message.reference.messageId);
+        const hey = await message.channel.messages.fetch(message.reference.messageId); // TODO: mentions return <@id>
         const c = new renderCanvas();
         c.buildWord(hey.content, hey.attachments.first() != null ? hey.attachments.first().url : null, 
         `- ${hey.author.username}#${hey.author.discriminator}`, hey.author.displayAvatarURL({ format: 'png', size: 512 }))
