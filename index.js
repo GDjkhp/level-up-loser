@@ -56,7 +56,7 @@ client.on("messageCreate", async (message) => {
         let promptMsg = message.content.replace(prefix + ask, '');
         if (message.mentions.repliedUser != null) promptMsg = await loopMsgs(promptMsg, message);
         const response = await getResponse(promptMsg, message);
-        message.reply({content: response,  allowedMentions: { parse: [] }});
+        message.reply({content: response, allowedMentions: { parse: [] }});
     }
 });
 async function loopMsgs(promptMsg, message) {
@@ -96,7 +96,7 @@ client.on("messageCreate", async (message) => {
         let promptMsg = message.content.replace(prefix + gpt, '');
         if (message.mentions.repliedUser != null) promptMsg = await loopMsgs0(promptMsg, message);
         const response = await getResponse0(promptMsg, message);
-        message.reply({content: response,  allowedMentions: { parse: [] }});
+        message.reply({content: response, allowedMentions: { parse: [] }});
     }
 });
 async function loopMsgs0(promptMsg, message) {
