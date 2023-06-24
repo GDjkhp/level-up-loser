@@ -56,7 +56,7 @@ client.on("messageCreate", async (message) => {
         let promptMsg = message.content.replace(prefix + ask, '');
         if (message.mentions.repliedUser != null) promptMsg = await loopMsgs(promptMsg, message);
         const response = await getResponse(promptMsg, message);
-        message.reply(response);
+        message.reply({content: response,  allowedMentions: { parse: [] }});
     }
 });
 async function loopMsgs(promptMsg, message) {
@@ -94,17 +94,17 @@ async function getResponse(promptMsg, message) {
 client.on("messageCreate", async (message) => {
 	if(message.content.startsWith(prefix + gpt)) {
         let promptMsg = message.content.replace(prefix + gpt, '');
-        if (message.mentions.repliedUser != null) promptMsg = await loopMsgs(promptMsg, message);
-        const response = await getResponse(promptMsg, message);
-        message.reply(response);
+        if (message.mentions.repliedUser != null) promptMsg = await loopMsgs0(promptMsg, message);
+        const response = await getResponse0(promptMsg, message);
+        message.reply({content: response,  allowedMentions: { parse: [] }});
     }
 });
-async function loopMsgs(promptMsg, message) {
+async function loopMsgs0(promptMsg, message) {
     if (message.mentions.repliedUser == null) return `${promptMsg} >>`;
     const hey = await message.channel.messages.fetch(message.reference.messageId);
-    return await loopMsgs(`${hey.content.replace(prefix + ask, '')} >> ${promptMsg}`, hey);
+    return await loopMsgs0(`${hey.content.replace(prefix + ask, '')} >> ${promptMsg}`, hey);
 }
-async function getResponse(promptMsg, message) {
+async function getResponse0(promptMsg, message) {
     try {
         const completion = await openai.createCompletion({
             model: "text-davinci-003",
@@ -123,7 +123,7 @@ async function getResponse(promptMsg, message) {
             message.reply(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
             await wait(60 * 1000);
             // Retry the request
-            return await getResponse(promptMsg, message);
+            return await getResponse0(promptMsg, message);
         }
         
         // Handle other errors
