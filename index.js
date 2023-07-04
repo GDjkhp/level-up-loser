@@ -53,8 +53,8 @@ const openai = new OpenAIApi(configuration);
 // TEXT GENERATION (GPT 3.5 Turbo)
 client.on("messageCreate", async (message) => {
 	if(message.content.startsWith(prefix + ask)) {
-        let promptMsg = message.content.replace(prefix + ask, '');
-        message.reply({content: `\`${promptMsg}}\`\nGenerating response…`, allowedMentions: { parse: [] }});
+        let promptMsg = message.content.replace(`${prefix + ask} `, '');
+        message.reply({content: `\`${promptMsg}\`\nGenerating response…`, allowedMentions: { parse: [] }});
         if (message.mentions.repliedUser != null) promptMsg = await loopMsgs(promptMsg, message);
         await getResponse(promptMsg, message);
     }
@@ -104,8 +104,8 @@ async function getResponse(promptMsg, message) {
 // TEXT GENERATION (GPT 3)
 client.on("messageCreate", async (message) => {
 	if(message.content.startsWith(prefix + gpt)) {
-        let promptMsg = message.content.replace(prefix + gpt, '');
-        message.reply({content: `\`${promptMsg}}\`\nGenerating response…`, allowedMentions: { parse: [] }});
+        let promptMsg = message.content.replace(`${prefix + gpt} `, '');
+        message.reply({content: `\`${promptMsg}\`\nGenerating response…`, allowedMentions: { parse: [] }});
         if (message.mentions.repliedUser != null) promptMsg = await loopMsgs0(promptMsg, message);
         await getResponse0(promptMsg, message);
     }
@@ -147,8 +147,8 @@ async function getResponse0(promptMsg, message) {
 // IMAGE GENERATION
 client.on("messageCreate", async (message) => {
 	if(message.content.startsWith(prefix + imagine)) {
-        let promptMsg = message.content.replace(prefix + imagine, '');
-        message.reply({content: `\`${promptMsg}}\`\nGenerating image…`, allowedMentions: { parse: [] }});
+        let promptMsg = message.content.replace(`${prefix + imagine} `, '');
+        message.reply({content: `\`${promptMsg}\`\nGenerating image…`, allowedMentions: { parse: [] }});
         if (message.mentions.repliedUser != null) {
             const hey = await message.channel.messages.fetch(message.reference.messageId);
             promptMsg = `${promptMsg}: ${hey.content}`;
