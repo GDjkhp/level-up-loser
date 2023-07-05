@@ -54,7 +54,7 @@ const openai = new OpenAIApi(configuration);
 client.on("messageCreate", async (message) => {
 	if(message.content.startsWith(prefix + ask)) {
         let promptMsg = message.content.replace(`${prefix + ask} `, '');
-        message.reply({content: `\`${promptMsg}\`\nGenerating response…`, allowedMentions: { parse: [] }});
+        message.reply({content: `Generating response…`, allowedMentions: { parse: [] }});
         if (message.mentions.repliedUser != null) promptMsg = await loopMsgs(promptMsg, message);
         await getResponse(promptMsg, message);
     }
@@ -105,7 +105,7 @@ async function getResponse(promptMsg, message) {
 client.on("messageCreate", async (message) => {
 	if(message.content.startsWith(prefix + gpt)) {
         let promptMsg = message.content.replace(`${prefix + gpt} `, '');
-        message.reply({content: `\`${promptMsg}\`\nGenerating response…`, allowedMentions: { parse: [] }});
+        message.reply({content: `Generating response…`, allowedMentions: { parse: [] }});
         if (message.mentions.repliedUser != null) promptMsg = await loopMsgs0(promptMsg, message);
         await getResponse0(promptMsg, message);
     }
@@ -148,7 +148,7 @@ async function getResponse0(promptMsg, message) {
 client.on("messageCreate", async (message) => {
 	if(message.content.startsWith(prefix + imagine)) {
         let promptMsg = message.content.replace(`${prefix + imagine} `, '');
-        message.reply({content: `\`${promptMsg}\`\nGenerating image…`, allowedMentions: { parse: [] }});
+        message.reply({content: `Generating image…`, allowedMentions: { parse: [] }});
         if (message.mentions.repliedUser != null) {
             const hey = await message.channel.messages.fetch(message.reference.messageId);
             promptMsg = `${promptMsg}: ${hey.content}`;
