@@ -50,136 +50,153 @@ const configuration = new Configuration({
 });
 const openai = new OpenAIApi(configuration);
 
-// TEXT GENERATION (GPT 3.5 Turbo)
+// TEXT GENERATION (GPT-3.5-Turbo)
 client.on("messageCreate", async (message) => {
-	if(message.content.startsWith(prefix + ask)) {
-        let promptMsg = message.content.replace(`${prefix + ask} `, '');
-        message.reply({content: `Generating response…`, allowedMentions: { parse: [] }});
-        if (message.mentions.repliedUser != null) promptMsg = await loopMsgs(promptMsg, message);
-        await getResponse(promptMsg, message);
+    if(message.content.startsWith(prefix + ask)) {
+        await getResponse(message);
     }
 });
-async function loopMsgs(promptMsg, message) {
-    if (message.mentions.repliedUser == null) return `${promptMsg} >>`;
-    const hey = await message.channel.messages.fetch(message.reference.messageId);
-    return await loopMsgs(`${hey.content.replace(prefix + ask, '')} >> ${promptMsg}`, hey);
-}
-async function getResponse(promptMsg, message) {
+
+async function getResponse(message) {
+    const messagesArray = await loopMsgs(message);
+    const info = message.reply({content: `Generating response…`});
+    const old = new Date();
+    let completion;
     try {
-        const completion = await openai.createChatCompletion({
+        completion = await openai.createChatCompletion({
             model: "gpt-3.5-turbo",
-            messages: [{role: "user", content: promptMsg}],
+            messages: messagesArray,
         });
-        if (completion.data.choices[0].message.content.length > 2000) {
-            let index = 0;
-            while (index < completion.data.choices[0].message.content.length) {
-                if (index == 0) {
-                    message.reply({content: `${completion.data.choices[0].message.content.substring(0, 2000)}`, 
-                    allowedMentions: { parse: [] }});
-                }
-                else {
-                    message.channel.send({content: `${completion.data.choices[0].message.content.substring(index, index+2000)}`, 
-                    allowedMentions: { parse: [] }});
-                }
-                index+=2000;
-            }
-        }
-        message.reply({content: completion.data.choices[0].message.content, allowedMentions: { parse: [] }});
     } catch (error) {
         if (error.response.data.error.message == "You exceeded your current quota, please check your plan and billing details.")
-            return `${error.response.data.error.message} Wake up <@729554186777133088>!\n\n${await martinLutherKing()}`;
+            return `${error.response.data.error.message}\n\n${await martinLutherKing()}`;
         
         if (error.response && error.response.status === 429) {
             // Retry the request after a delay
             message.reply(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
             await wait(60 * 1000);
             // Retry the request
-            return await getResponse(promptMsg, message);
+            return await getResponse(message);
         }
         // Handle other errors
         return `Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`;
     }
+    if (completion.data.choices[0].message.content.length > 2000) {
+        let index = 0;
+        while (index < completion.data.choices[0].message.content.length) {
+            if (index == 0) {
+                message.reply({
+                    content: `${completion.data.choices[0].message.content.substring(0, 2000)}`, 
+                    allowedMentions: { parse: [] }
+                });
+            }
+            else {
+                message.channel.send({
+                    content: `${completion.data.choices[0].message.content.substring(index, index+2000)}`, 
+                    allowedMentions: { parse: [] }
+                });
+            }
+            index+=2000;
+        }
+    } 
+    else message.reply({content: completion.data.choices[0].message.content, allowedMentions: { parse: [] }});
+    (await info).edit(`Took ${new Date() - old}ms`);
 }
 
-// TEXT GENERATION (GPT 3)
+async function loopMsgs(message) {
+    const role = message.author.bot ? "assistant" : "user";
+    const content = message.content.replace(`${prefix + ask} `, '');
+    if (message.mentions.repliedUser == null) {
+        return [{ role: role, content: content }];
+    }
+    
+    const repliedMessage = await message.channel.messages.fetch(message.reference.messageId);
+    const previousMessages = await loopMsgs(repliedMessage);
+    
+    return [...previousMessages, { role: role, content: content }];
+}
+
+// TEXT GENERATION (GPT-3)
 client.on("messageCreate", async (message) => {
 	if(message.content.startsWith(prefix + gpt)) {
-        let promptMsg = message.content.replace(`${prefix + gpt} `, '');
-        message.reply({content: `Generating response…`, allowedMentions: { parse: [] }});
-        if (message.mentions.repliedUser != null) promptMsg = await loopMsgs0(promptMsg, message);
-        await getResponse0(promptMsg, message);
+        await getResponse0(message);
     }
 });
-async function loopMsgs0(promptMsg, message) {
-    if (message.mentions.repliedUser == null) return `${promptMsg} >>`;
-    const hey = await message.channel.messages.fetch(message.reference.messageId);
-    return await loopMsgs0(`${hey.content.replace(prefix + ask, '')} >> ${promptMsg}`, hey);
-}
-async function getResponse0(promptMsg, message) {
+
+async function getResponse0(message) {
+    const info = message.reply({content: `Generating response…`});
+    const old = new Date();
+    let completion;
     try {
-        const completion = await openai.createCompletion({
+        completion = await openai.createCompletion({
             model: "text-davinci-003",
-            prompt: promptMsg,
+            prompt: message.content.replace(`${prefix + gpt} `, ''),
             max_tokens: 2000,
         });
-        if (completion.data.choices[0].text.length > 2000) {
-            message.reply({content: `${completion.data.choices[0].text.substring(0, 2000 - 16)}\n\nText too long!`, 
-            allowedMentions: { parse: [] }});
-        }
-        else message.reply({content: `${completion.data.choices[0].text}`, allowedMentions: { parse: [] }});
-        
     } catch (error) {
         if (error.response.data.error.message == "You exceeded your current quota, please check your plan and billing details.")
-            return `${error.response.data.error.message} Wake up <@729554186777133088>!\n\n${await martinLutherKing()}`;
+            return `${error.response.data.error.message}\n\n${await martinLutherKing()}`;
         
         if (error.response && error.response.status === 429) {
             // Retry the request after a delay
             message.reply(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
             await wait(60 * 1000);
             // Retry the request
-            return await getResponse0(promptMsg, message);
+            return await getResponse0(message);
         }
         // Handle other errors
         return `Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`;
     }
+    if (completion.data.choices[0].text.length > 2000) {
+        message.reply({
+            content: `${completion.data.choices[0].text.substring(0, 2000 - 16)}\n\nText too long!`, 
+            allowedMentions: { parse: [] }
+        });
+    }
+    else message.reply({content: `${completion.data.choices[0].text}`, allowedMentions: { parse: [] }});
+    (await info).edit(`Took ${new Date() - old}ms`);
 }
 
-// IMAGE GENERATION
+// IMAGE GENERATION (DALL-E)
 client.on("messageCreate", async (message) => {
 	if(message.content.startsWith(prefix + imagine)) {
-        let promptMsg = message.content.replace(`${prefix + imagine} `, '');
-        message.reply({content: `Generating image…`, allowedMentions: { parse: [] }});
-        if (message.mentions.repliedUser != null) {
-            const hey = await message.channel.messages.fetch(message.reference.messageId);
-            promptMsg = `${promptMsg}: ${hey.content}`;
-        }
-        await getImage(promptMsg, message);
+        await getImage(message);
     }
 });
-async function getImage(promptMsg, message) {
+
+async function getImage(message) {
+    let promptMsg = message.content.replace(`${prefix + imagine} `, '');
+    if (message.mentions.repliedUser != null) {
+        const hey = await message.channel.messages.fetch(message.reference.messageId);
+        promptMsg = `${promptMsg}: ${hey.content}`.replace(`${prefix + imagine} `, '');
+    }
+    const info = message.reply({content: `Generating image…`});
+    const old = new Date();
+    let response;
     try {
-        const response = await openai.createImage({
+        response = await openai.createImage({
             prompt: promptMsg,
         });
-        message.reply({files: [{attachment: response.data.data[0].url, name: `${promptMsg}.png`}]});
     } catch (error) {
         if (error.response.data.error.message == "Billing hard limit has been reached")
-            return message.reply(`Error ${error.response.status}: ${error.response.data.error.message}. Wake up <@729554186777133088>!\n\n${await martinLutherKing()}`);
+            return message.reply(`Error ${error.response.status}: ${error.response.data.error.message}.\n\n${await martinLutherKing()}`);
     
         if (error.response && error.response.status === 429) {
             // Retry the request after a delay
             message.reply(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
             await wait(60 * 1000);
             // Retry the request
-            return await getImage(promptMsg, message);
+            return await getImage(message);
         }
         // Handle other errors
         message.reply(`Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`);
     }
+    message.reply({files: [{attachment: response.data.data[0].url, name: `${promptMsg}.png`}]});
+    (await info).edit(`Took ${new Date() - old}ms`);
 }
 
 // XP SYSTEM
-var xpSystem = false; // ItzCata said it's annoying
+var xpSystem = false; // TODO: ItzCata said it's annoying. Create DB of ServerIDs and let the people decide. Check discord-xp (index.js)
 const Levels = require('discord-xp');
 Levels.setURL(process.env.DB);
 const canvacord = require('canvacord');
