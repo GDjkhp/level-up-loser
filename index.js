@@ -69,17 +69,17 @@ async function getResponse(message) {
         });
     } catch (error) {
         if (error.response.data.error.message == "You exceeded your current quota, please check your plan and billing details.")
-            return `${error.response.data.error.message}\n\n${await martinLutherKing()}`;
+            return (await info).edit(`${error.response.data.error.message}\n\n${await martinLutherKing()}`);
         
         if (error.response && error.response.status === 429) {
             // Retry the request after a delay
-            message.reply(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
+            (await info).edit(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
             await wait(60 * 1000);
             // Retry the request
             return await getResponse(message);
         }
         // Handle other errors
-        return `Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`;
+        return (await info).edit(`Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`);
     }
     if (completion.data.choices[0].message.content.length > 2000) {
         let index = 0;
@@ -106,7 +106,7 @@ async function getResponse(message) {
 async function loopMsgs(message) {
     const role = message.author.bot ? "assistant" : "user";
     const content = message.content.replace(`${prefix + ask} `, '');
-    if (message.mentions.repliedUser == null) {
+    if (!message.mentions.repliedUser) {
         return [{ role: role, content: content }];
     }
     
@@ -135,17 +135,17 @@ async function getResponse0(message) {
         });
     } catch (error) {
         if (error.response.data.error.message == "You exceeded your current quota, please check your plan and billing details.")
-            return `${error.response.data.error.message}\n\n${await martinLutherKing()}`;
+            return (await info).edit(`${error.response.data.error.message}\n\n${await martinLutherKing()}`);
         
         if (error.response && error.response.status === 429) {
             // Retry the request after a delay
-            message.reply(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
+            (await info).edit(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
             await wait(60 * 1000);
             // Retry the request
             return await getResponse0(message);
         }
         // Handle other errors
-        return `Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`;
+        return (await info).edit(`Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`);
     }
     if (completion.data.choices[0].text.length > 2000) {
         message.reply({
@@ -166,7 +166,7 @@ client.on("messageCreate", async (message) => {
 
 async function getImage(message) {
     let promptMsg = message.content.replace(`${prefix + imagine} `, '');
-    if (message.mentions.repliedUser != null) {
+    if (message.mentions.repliedUser) {
         const hey = await message.channel.messages.fetch(message.reference.messageId);
         promptMsg = `${promptMsg}: ${hey.content}`.replace(`${prefix + imagine} `, '');
     }
@@ -179,17 +179,17 @@ async function getImage(message) {
         });
     } catch (error) {
         if (error.response.data.error.message == "Billing hard limit has been reached")
-            return message.reply(`Error ${error.response.status}: ${error.response.data.error.message}.\n\n${await martinLutherKing()}`);
+            return (await info).edit(`Error ${error.response.status}: ${error.response.data.error.message}.\n\n${await martinLutherKing()}`);
     
         if (error.response && error.response.status === 429) {
             // Retry the request after a delay
-            message.reply(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
+            (await info).edit(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
             await wait(60 * 1000);
             // Retry the request
             return await getImage(message);
         }
         // Handle other errors
-        message.reply(`Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`);
+        return (await info).edit(`Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`);
     }
     message.reply({files: [{attachment: response.data.data[0].url, name: `${promptMsg}.png`}]});
     (await info).edit(`Took ${new Date() - old}ms`);
@@ -263,20 +263,20 @@ client.on("messageCreate", async (message) => {
 client.on("messageCreate", async (message) => {
     if (message.author.bot) return;
     if(message.content.includes("<@1090254079609020447>") ||
-        (message.mentions.repliedUser != null && message.mentions.repliedUser.id == "1090254079609020447"))
+        (message.mentions.repliedUser && message.mentions.repliedUser.id == "1090254079609020447"))
         message.reply(await martinLutherKing());
 });
 // MAKE IT A QUOTE
 client.on("messageCreate", async (message) => {
-    if (message.content.startsWith(prefix + quote) && message.mentions.repliedUser != null) {
+    if (message.content.startsWith(prefix + quote) && message.mentions.repliedUser) {
         const hey = await message.channel.messages.fetch(message.reference.messageId); // TODO: mentions return <@id>
         const c = new renderCanvas();
         // Check if the message has mentions
         let contentWithUsernames;
-        if (message.mentions) {
-            const mentions = message.mentions;
+        if (hey.mentions) {
+            const mentions = hey.mentions;
             // Replace <@id> mentions with the corresponding usernames
-            contentWithUsernames = message.content.replace(
+            contentWithUsernames = hey.content.replace(
                 MessageMentions.UsersPattern,
                 (match, userId) => {
                     const user = mentions.users.get(userId);
@@ -284,7 +284,7 @@ client.on("messageCreate", async (message) => {
                 }
             );
         }
-        c.buildWord(message.mentions ? contentWithUsernames : hey.content, hey.attachments.first() != null ? hey.attachments.first().url : null, 
+        c.buildWord(message.mentions ? contentWithUsernames : hey.content, hey.attachments.first() ? hey.attachments.first().url : null, 
         `- ${hey.author.username}#${hey.author.discriminator}`, hey.author.displayAvatarURL({ format: 'png', size: 512 }))
             .then(data => {
                 write(data, "./quote.png");
@@ -309,7 +309,7 @@ class renderCanvas {
 
         // behind text
         try {
-            if (attach != null) {
+            if (attach) {
                 var png = await Canvas.loadImage(attach);
     
                 var hRatio = 300 / png.width;
