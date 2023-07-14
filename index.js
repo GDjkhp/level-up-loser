@@ -148,10 +148,22 @@ async function getResponse0(message) {
         return (await info).edit(`Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`);
     }
     if (completion.data.choices[0].text.length > 2000) {
-        message.reply({
-            content: `${completion.data.choices[0].text.substring(0, 2000 - 16)}\n\nText too long!`, 
-            allowedMentions: { parse: [] }
-        });
+        let index = 0;
+        while (index < completion.data.choices[0].text.length) {
+            if (index == 0) {
+                message.reply({
+                    content: `${completion.data.choices[0].text.substring(0, 2000)}`, 
+                    allowedMentions: { parse: [] }
+                });
+            }
+            else {
+                message.channel.send({
+                    content: `${completion.data.choices[0].text.substring(index, index+2000)}`, 
+                    allowedMentions: { parse: [] }
+                });
+            }
+            index+=2000;
+        }
     }
     else message.reply({content: `${completion.data.choices[0].text}`, allowedMentions: { parse: [] }});
     (await info).edit(`Took ${new Date() - old}ms`);
