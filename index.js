@@ -366,7 +366,7 @@ class renderCanvas {
         // Loop through each font size starting from the maximum and decreasing until the text fits within the maximum width and height
         while (fontSize >= minFontSize) {
             // Set the font size
-            ctx.font = `bold ${fontSize}px amogus`;
+            ctx.font = `bold ${fontSize}px amogus, NOTO_COLOR_EMOJI`;
             // Break the text into words
             const words = text.split(' ');
             lines = [];
@@ -408,7 +408,7 @@ class renderCanvas {
         const y = canvas.height / 2 - height / 2 + 15;
         for (let i = 0; i < lines.length; i++) {
             const line = lines[i];
-            if (i == lines.length - 1) ctx.font = '25px amogus';
+            if (i == lines.length - 1) ctx.font = '25px amogus, NOTO_COLOR_EMOJI';
             ctx.fillText(line, x, y + (i * lineHeight));
         }
         // return everything all at once
