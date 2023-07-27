@@ -5,6 +5,7 @@
 require('dotenv').config();
 const {Client, Events, GatewayIntentBits, EmbedBuilder, MessageMentions} = require('discord.js');
 const client = new Client({ 
+    allowedMentions: { parse: [] },
 	intents: [
 		GatewayIntentBits.Guilds, 
 		GatewayIntentBits.GuildMessages, 
@@ -99,7 +100,7 @@ async function getResponse(message) {
             index+=2000;
         }
     } 
-    else message.reply({content: completion.data.choices[0].message.content, allowedMentions: { parse: [] }});
+    else message.reply({content: completion.data.choices[0].message.content});
     (await info).edit(`Took ${new Date() - old}ms`);
 }
 
@@ -165,7 +166,7 @@ async function getResponse0(message) {
             index+=2000;
         }
     }
-    else message.reply({content: `${completion.data.choices[0].text}`, allowedMentions: { parse: [] }});
+    else message.reply({content: `${completion.data.choices[0].text}`});
     (await info).edit(`Took ${new Date() - old}ms`);
 }
 
