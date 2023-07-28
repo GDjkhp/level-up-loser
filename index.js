@@ -5,7 +5,7 @@
 require('dotenv').config();
 const {Client, Events, GatewayIntentBits, EmbedBuilder, MessageMentions} = require('discord.js');
 const client = new Client({ 
-    allowedMentions: { parse: [], repliedUser: true },
+    allowedMentions: { parse: [], repliedUser: true, everyone: false },
 	intents: [
 		GatewayIntentBits.Guilds, 
 		GatewayIntentBits.GuildMessages, 
