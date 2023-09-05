@@ -12,12 +12,11 @@ const client = new Client({
 		GatewayIntentBits.MessageContent
 	] 
 });
-const config = require('./config.json');
-const prefix = config.prefix;
+const prefix = "-";
 const fs = require("fs");
 const Canvas = require("@napi-rs/canvas");
-const lvl = require('./messages.json');
-const roast = require('./insults.json');
+const lvl = require('./res/messages.json');
+const roast = require('./res/insults.json');
 const requestHandler = require('axios').default;
 const axios = requestHandler.create({
     timeout: 2000,
@@ -54,13 +53,13 @@ const openai = new OpenAIApi(configuration);
 // TEXT GENERATION (GPT-3.5-Turbo)
 client.on("messageCreate", async (message) => {
     if(message.content.startsWith(prefix + ask)) {
-        await getResponse(message);
+        await getResponse(message, null);
     }
 });
 
-async function getResponse(message) {
+async function getResponse(message, info) {
     const messagesArray = await loopMsgs(message);
-    const info = message.reply({content: `Generating response…`});
+    if (!info) info = message.reply({content: `Generating response…`});
     const old = new Date();
     let completion;
     try {
@@ -77,7 +76,7 @@ async function getResponse(message) {
             (await info).edit(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
             await wait(60 * 1000);
             // Retry the request
-            return await getResponse(message);
+            return await getResponse(message, info);
         }
         // Handle other errors
         return (await info).edit(`Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`);
@@ -120,12 +119,12 @@ async function loopMsgs(message) {
 // TEXT GENERATION (GPT-3)
 client.on("messageCreate", async (message) => {
 	if(message.content.startsWith(prefix + gpt)) {
-        await getResponse0(message);
+        await getResponse0(message, null);
     }
 });
 
-async function getResponse0(message) {
-    const info = message.reply({content: `Generating response…`});
+async function getResponse0(message, info) {
+    if (!info) info = message.reply({content: `Generating response…`});
     const old = new Date();
     let completion;
     try {
@@ -143,7 +142,7 @@ async function getResponse0(message) {
             (await info).edit(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
             await wait(60 * 1000);
             // Retry the request
-            return await getResponse0(message);
+            return await getResponse0(message, info);
         }
         // Handle other errors
         return (await info).edit(`Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`);
@@ -173,17 +172,17 @@ async function getResponse0(message) {
 // IMAGE GENERATION (DALL-E)
 client.on("messageCreate", async (message) => {
 	if(message.content.startsWith(prefix + imagine)) {
-        await getImage(message);
+        await getImage(message, null);
     }
 });
 
-async function getImage(message) {
+async function getImage(message, info) {
     let promptMsg = message.content.replace(`${prefix + imagine} `, '');
     if (message.mentions.repliedUser) {
         const hey = await message.channel.messages.fetch(message.reference.messageId);
         promptMsg = `${promptMsg}: ${hey.content}`.replace(`${prefix + imagine} `, '');
     }
-    const info = message.reply({content: `Generating image…`});
+    if (!info) info = message.reply({content: `Generating image…`});
     const old = new Date();
     let response;
     try {
@@ -199,7 +198,7 @@ async function getImage(message) {
             (await info).edit(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
             await wait(60 * 1000);
             // Retry the request
-            return await getImage(message);
+            return await getImage(message, info);
         }
         // Handle other errors
         return (await info).edit(`Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`);
@@ -238,7 +237,7 @@ client.on("messageCreate", async (message) => {
 
         const rank = new canvacord.Rank() // Build the Rank Card
             .registerFonts([{
-                path: './AmaticSC-Regular.ttf', name: 'amogus'
+                path: './res/AmaticSC-Regular.ttf', name: 'amogus'
             }])
             .setAvatar(target.displayAvatarURL({ format: 'png', size: 512 }))
             .setCurrentXP(user.cleanXp) // Current User Xp for the current level
@@ -347,7 +346,7 @@ class renderCanvas {
         // ctx.restore();
 
         // text anything
-        Canvas.GlobalFonts.registerFromPath('./AmaticSC-Regular.ttf', 'amogus');
+        Canvas.GlobalFonts.registerFromPath('./res/AmaticSC-Regular.ttf', 'amogus');
         ctx.fillStyle = "white";
         // Set the text alignment
         ctx.textAlign = 'center';
