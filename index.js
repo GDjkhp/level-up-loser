@@ -44,11 +44,10 @@ client.once(Events.ClientReady, c => {
 });
 
 // open ai shit
-const { Configuration, OpenAIApi } = require("openai");
-const configuration = new Configuration({
+const { OpenAI } = require("openai")
+const openai = new OpenAI({
     apiKey: process.env.OPENAI_TOKEN,
 });
-const openai = new OpenAIApi(configuration);
 
 // TEXT GENERATION (GPT-3.5-Turbo)
 client.on("messageCreate", async (message) => {
@@ -63,7 +62,7 @@ async function getResponse(message, info) {
     const old = new Date();
     let completion;
     try {
-        completion = await openai.createChatCompletion({
+        completion = await openai.chat.completions.create({
             model: "gpt-3.5-turbo",
             messages: messagesArray,
         });
@@ -128,7 +127,7 @@ async function getResponse0(message, info) {
     const old = new Date();
     let completion;
     try {
-        completion = await openai.createCompletion({
+        completion = await openai.completions.create({
             model: "text-davinci-003",
             prompt: message.content.replace(`${prefix + gpt} `, ''),
             max_tokens: 2000,
@@ -186,7 +185,7 @@ async function getImage(message, info) {
     const old = new Date();
     let response;
     try {
-        response = await openai.createImage({
+        response = await openai.images.generate({
             prompt: promptMsg,
         });
     } catch (error) {
