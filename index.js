@@ -67,10 +67,11 @@ async function getResponse(message, info) {
             messages: messagesArray,
         });
     } catch (error) {
-        if (error.response.data.error.message == "You exceeded your current quota, please check your plan and billing details.")
-            return (await info).edit(`${error.response.data.error.message}\n\n${await martinLutherKing()}`);
+        console.log(error);
+        if (error.error.code == "insufficient_quota")
+            return (await info).edit(`${error.error.message}\n\n${await martinLutherKing()}`);
         
-        if (error.response && error.response.status === 429) {
+        if (error.status === 429) {
             // Retry the request after a delay
             (await info).edit(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
             await wait(60 * 1000);
@@ -78,27 +79,27 @@ async function getResponse(message, info) {
             return await getResponse(message, info);
         }
         // Handle other errors
-        return (await info).edit(`Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`);
+        return (await info).edit(`Error ${error.status}: ${error.error.message}\n\n${await martinLutherKing()}`);
     }
-    if (completion.data.choices[0].message.content.length > 2000) {
+    if (completion.choices[0].message.content.length > 2000) {
         let index = 0;
-        while (index < completion.data.choices[0].message.content.length) {
+        while (index < completion.choices[0].message.content.length) {
             if (index == 0) {
                 message.reply({
-                    content: `${completion.data.choices[0].message.content.substring(0, 2000)}`, 
+                    content: `${completion.choices[0].message.content.substring(0, 2000)}`, 
                     allowedMentions: { parse: [] }
                 });
             }
             else {
                 message.channel.send({
-                    content: `${completion.data.choices[0].message.content.substring(index, index+2000)}`, 
+                    content: `${completion.choices[0].message.content.substring(index, index+2000)}`, 
                     allowedMentions: { parse: [] }
                 });
             }
             index+=2000;
         }
     } 
-    else message.reply({content: completion.data.choices[0].message.content});
+    else message.reply({content: completion.choices[0].message.content});
     (await info).edit(`Took ${new Date() - old}ms`);
 }
 
@@ -133,10 +134,11 @@ async function getResponse0(message, info) {
             max_tokens: 2000,
         });
     } catch (error) {
-        if (error.response.data.error.message == "You exceeded your current quota, please check your plan and billing details.")
-            return (await info).edit(`${error.response.data.error.message}\n\n${await martinLutherKing()}`);
+        console.log(error);
+        if (error.error.code == "insufficient_quota")
+            return (await info).edit(`${error.error.message}\n\n${await martinLutherKing()}`);
         
-        if (error.response && error.response.status === 429) {
+        if (error.status === 429) {
             // Retry the request after a delay
             (await info).edit(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
             await wait(60 * 1000);
@@ -144,27 +146,27 @@ async function getResponse0(message, info) {
             return await getResponse0(message, info);
         }
         // Handle other errors
-        return (await info).edit(`Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`);
+        return (await info).edit(`Error ${error.status}: ${error.error.message}\n\n${await martinLutherKing()}`);
     }
-    if (completion.data.choices[0].text.length > 2000) {
+    if (completion.choices[0].text.length > 2000) {
         let index = 0;
-        while (index < completion.data.choices[0].text.length) {
+        while (index < completion.choices[0].text.length) {
             if (index == 0) {
                 message.reply({
-                    content: `${completion.data.choices[0].text.substring(0, 2000)}`, 
+                    content: `${completion.choices[0].text.substring(0, 2000)}`, 
                     allowedMentions: { parse: [] }
                 });
             }
             else {
                 message.channel.send({
-                    content: `${completion.data.choices[0].text.substring(index, index+2000)}`, 
+                    content: `${completion.choices[0].text.substring(index, index+2000)}`, 
                     allowedMentions: { parse: [] }
                 });
             }
             index+=2000;
         }
     }
-    else message.reply({content: `${completion.data.choices[0].text}`});
+    else message.reply({content: `${completion.choices[0].text}`});
     (await info).edit(`Took ${new Date() - old}ms`);
 }
 
@@ -189,10 +191,11 @@ async function getImage(message, info) {
             prompt: promptMsg,
         });
     } catch (error) {
-        if (error.response.data.error.message == "Billing hard limit has been reached")
-            return (await info).edit(`Error ${error.response.status}: ${error.response.data.error.message}.\n\n${await martinLutherKing()}`);
+        console.log(error);
+        if (error.error.code == "billing_hard_limit_reached")
+            return (await info).edit(`Error ${error.status}: ${error.error.message}.\n\n${await martinLutherKing()}`);
     
-        if (error.response && error.response.status === 429) {
+        if (error.status === 429) {
             // Retry the request after a delay
             (await info).edit(`Your are being rate limited! Retrying in 60 seconds, please wait!\n\n${await martinLutherKing()}`);
             await wait(60 * 1000);
@@ -200,9 +203,9 @@ async function getImage(message, info) {
             return await getImage(message, info);
         }
         // Handle other errors
-        return (await info).edit(`Error ${error.response.status}: ${error.response.data.error.message}\n\n${await martinLutherKing()}`);
+        return (await info).edit(`Error ${error.status}: ${error.error.message}\n\n${await martinLutherKing()}`);
     }
-    message.reply({files: [{attachment: response.data.data[0].url, name: `${promptMsg}.png`}]});
+    message.reply({files: [{attachment: response.data.url[0], name: `${promptMsg}.png`}]});
     (await info).edit(`Took ${new Date() - old}ms`);
 }
 
