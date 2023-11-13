@@ -188,6 +188,7 @@ async function getImage(message, info) {
     let response;
     try {
         response = await openai.images.generate({
+            model: "dall-e-3",
             prompt: promptMsg,
         });
     } catch (error) {
@@ -205,7 +206,7 @@ async function getImage(message, info) {
         // Handle other errors
         return (await info).edit(`Error ${error.status}: ${error.error.message}\n\n${await martinLutherKing()}`);
     }
-    message.reply({files: [{attachment: response.data.url[0], name: `${promptMsg}.png`}]});
+    message.reply({files: [{attachment: response.data[0].url, name: `${promptMsg}.png`}]});
     (await info).edit(`Took ${new Date() - old}ms`);
 }
 
